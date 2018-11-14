@@ -1,79 +1,167 @@
-import sys, pygame
+import sys, pygame, math
+from random import randint
+
+
+width = 800
+height = 800
+borderWidth = 10
+screenPadding = 50
+
+
+class Snake(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.imageHead = pygame.image.load('snakeHead.png')
+        self.imageHead = pygame.transform.scale(self.imageHead, (50, 50))
+        self.imageBody = pygame.image.load('snakeBody.png')
+        self.imageBody = pygame.transform.scale(self.imageBody, (50, 50))
+        self.angle = 0
+        self.speed = 50
+        self.x = [250, 200]
+        self.y = [250, 250]
+        self.length = 2
+
+    def update(self):
+        if self.angle % 360 == 0:
+            self.x.insert(0, self.x[0]+50)
+            self.y.insert(0, self.y[0])
+        if self.angle % 360 == 90:
+            self.x.insert(0, self.x[0])
+            self.y.insert(0, self.y[0]+50)
+        if self.angle % 360 == 180:
+            self.x.insert(0, self.x[0]-50)
+            self.y.insert(0, self.y[0])
+        if self.angle % 360 == 270:
+            self.x.insert(0, self.x[0])
+            self.y.insert(0, self.y[0]-50)
+        self.x = self.x[:self.length]
+        self.y = self.y[:self.length]
+
+    def rotateHead(self, angle):
+        self.imageHead = pygame.transform.rotate(self.imageHead, angle)
+
+    def wrap(self):
+        if self.x[0] <= 0:
+            self.x[0] += width
+        if self.x[0] >= width:
+            self.x[0] -= width
+        if self.y[0] <= 0:
+            self.y[0] += height
+        if self.y[0] >= height:
+            self.y[0] -= height
+
+class Apple(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load('apple.png')
+        self.image = pygame.transform.scale(self.image, (50, 50))
+        self.x = 0
+        self.y = 0
+        self.alive = 0
+
+    def spawn(self):
+        x = randint(1, (width/50)-1)*50
+        y = randint(1, (height/50)-1)*50
+        self.x = x
+        self.y = y
+        self.alive = 1
+
+
+def checkCollisionApple(snake, apple):
+    if snake.x[0] == apple.x and snake.y[0] == apple.y:
+        return True
+
+def checkColissionSelf(snake):
+    if (snake.x[0], snake.y[0]) in zip(snake.x[1:], snake.y[1:]):
+        return True
+    else:
+        return False
+
+def checkColissionWall(snake):
+    if snake.x[0] <= 0 or snake.y[0] <= 0 or snake.x[0] >= width-50 or snake.y[0] >= height-50:
+        return True
+    else:
+        return False
+
+def drawBorder():
+    pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [0, 0, width, borderWidth])
+    pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [0, 0, borderWidth, height])
+    pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [0, height, width, borderWidth])
+    pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [width, 0, borderWidth, height + borderWidth])
 
 
 
 
 
-pygame.init()
 
-size = width, height = 1000, 800
-speed = [0, 0]
-black = 0, 0, 0
+def main():
+    pygame.init()
+    pygame.font.init()
+    gameoverfont = pygame.font.SysFont('Comic Sans MS', 30)
+    gameovertext = gameoverfont.render('GAME OVER', False, (200, 0, 0))
 
-velocity = 1
-direction = 0
+    size = width+2*borderWidth + 2*screenPadding, height+2*borderWidth + 2*screenPadding
+    black = 0, 0, 0
 
-screen = pygame.display.set_mode(size)
-snakesize = 50
+    screen = pygame.display.set_mode(size)
 
-ball = pygame.image.load("snakeHead.png")
-ball = pygame.transform.scale(ball, (snakesize, snakesize))
-ballrect = ball.get_rect()
+    speed = 50
 
-while 1:
+    initialVector = [0, speed]
+    snake = Snake()
+    snake.rotateHead(-90)
 
-    speed = [0,0]
+    apple = Apple()
+    apple.spawn()
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            sys.exit()
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                direction -= 90
-                ball = pygame.transform.rotate(ball, 90)
-            if event.key == pygame.K_RIGHT:
-                direction += 90
-                ball = pygame.transform.rotate(ball, -90)
-
-    if direction < 0:
-        direction += 360
-
-    direction = direction % 360
-
-    if direction == 0:
-        ballrect.y -= snakesize
-    if direction == 90:
-        ballrect.x += snakesize
-    if direction == 180:
-        ballrect.y += snakesize
-    if direction == 270:
-        ballrect.x -= snakesize
-
-    # keys = pygame.key.get_pressed()
-    # if keys[pygame.K_LEFT]:
-    #     if ballrect.left > 0:
-    #         speed[0] = -velocity
-    # if keys[pygame.K_RIGHT]:
-    #     if ballrect.right < width:
-    #         speed[0] = velocity
-    # if keys[pygame.K_UP]:
-    #     if ballrect.top > 0:
-    #         speed[1] = -velocity
-    # if keys[pygame.K_DOWN]:
-    #     if ballrect.bottom < height:
-    #         speed[1] = velocity
+    while 1:
 
 
-    if ballrect.x > width:
-        ballrect.x = 0
-    if ballrect.x < 0:
-        ballrect.x = width
-    if ballrect.y > height:
-        ballrect.y = 0
-    if ballrect.y < 0:
-        ballrect.y = height
 
-    pygame.time.delay(100)
-    screen.fill(black)
-    screen.blit(ball, ballrect)
-    pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    snake.angle -= 90
+                    snake.rotateHead(90)
+                if event.key == pygame.K_RIGHT:
+                    snake.angle += 90
+                    snake.rotateHead(-90)
+
+        if checkColissionSelf(snake) or checkColissionWall(snake):
+            screen.fill(black)
+            screen.blit(apple.image, (apple.x, apple.y))
+            for i in range(snake.length):
+                if i != 0:
+                    screen.blit(snake.imageBody, (snake.x[i], snake.y[i]))
+            screen.blit(snake.imageHead, (snake.x[0], snake.y[0]))
+            screen.blit(gameovertext, (0, 0))
+            pygame.display.flip()
+        else:
+
+            if checkCollisionApple(snake, apple):
+                snake.length += 1
+                apple.alive = 0
+                apple.spawn()
+
+            snake.update()
+            snake.wrap()
+
+
+            pygame.time.delay(100)
+
+            screen.fill(black)
+            pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [screenPadding, screenPadding, width+2*borderWidth, borderWidth])
+            pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [screenPadding, screenPadding, borderWidth, height+2*borderWidth])
+            pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [screenPadding, height + borderWidth + screenPadding, width + 2*borderWidth, borderWidth])
+            pygame.draw.rect(screen, pygame.Color(255, 255, 255, 255), [width+borderWidth+screenPadding, screenPadding, borderWidth, height+2*borderWidth])
+            screen.blit(apple.image, (apple.x, apple.y))
+            for i in range(snake.length):
+                if i != 0:
+                    screen.blit(snake.imageBody, (snake.x[i], snake.y[i]))
+            screen.blit(snake.imageHead, (snake.x[0], snake.y[0]))
+            pygame.display.flip()
+
+if __name__ == "__main__":
+    main()
